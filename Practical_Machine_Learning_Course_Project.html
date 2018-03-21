@@ -131,11 +131,13 @@ $(document).ready(function () {
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
-<p>You can also embed plots, for example:</p>
+<p>Below are the links through which the data was obtained. Also, the variables <strong>trainingData</strong> and <strong>testingData</strong> were created for the <strong>pml-training.csv</strong> and <strong>pml-testing.csv</strong> files, respectively.</p>
 <pre class="r"><code># url1 = &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
 # download.file(url1, destfile = &quot;./Data/pml-training.csv&quot;)
 # url2 = &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
-# download.file(url2, destfile = &quot;./Data/pml-testing.csv&quot;)</code></pre>
+# download.file(url2, destfile = &quot;./Data/pml-testing.csv&quot;)
+trainingData = read.csv(&quot;./Data/pml-training.csv&quot;)
+testingData = read.csv(&quot;./Data/pml-testing.csv&quot;)</code></pre>
 </div>
 <div id="cleaning-the-data" class="section level2">
 <h2>Cleaning the Data</h2>

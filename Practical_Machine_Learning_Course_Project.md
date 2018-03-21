@@ -15,7 +15,7 @@ output:
 
 ## Data
 
-You can also embed plots, for example:
+Below are the links through which the data was obtained. Also, the variables **trainingData** and **testingData** were created for the **pml-training.csv** and **pml-testing.csv** files, respectively. 
 
 
 ```r
@@ -23,6 +23,8 @@ You can also embed plots, for example:
 # download.file(url1, destfile = "./Data/pml-training.csv")
 # url2 = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 # download.file(url2, destfile = "./Data/pml-testing.csv")
+trainingData = read.csv("./Data/pml-training.csv")
+testingData = read.csv("./Data/pml-testing.csv")
 ```
 
 ## Cleaning the Data
