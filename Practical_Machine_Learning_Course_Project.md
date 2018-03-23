@@ -214,7 +214,7 @@ modelPrediction
 ##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E
 ```
-Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct.
+Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct
 
 
 

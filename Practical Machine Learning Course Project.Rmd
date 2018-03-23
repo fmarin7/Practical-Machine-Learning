@@ -117,7 +117,7 @@ Based on our alculations, the accuracy of the model is approximately 99.8%, so t
 modelPrediction <- predict(fitrf, testingDataSet)
 modelPrediction
 ```
-Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct.
+Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct
 
 
 
