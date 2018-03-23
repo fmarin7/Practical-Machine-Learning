@@ -128,6 +128,7 @@ $(document).ready(function () {
 
 <div id="summary" class="section level2">
 <h2>Summary</h2>
+<p>6 Participants in an experiment were asked to perform barbell lifts correctly and incorrectly while accelerometers were attached to their belt, forearm, arm, and dumbell to take measurements.The objective of the project is to predict whether they did the exercises correctly or incorrectly based on the provided data which is included in the section below.</p>
 </div>
 <div id="data" class="section level2">
 <h2>Data</h2>
@@ -136,26 +137,108 @@ $(document).ready(function () {
 # download.file(url1, destfile = &quot;./Data/pml-training.csv&quot;)
 # url2 = &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
 # download.file(url2, destfile = &quot;./Data/pml-testing.csv&quot;)
-trainingData = read.csv(&quot;./Data/pml-training.csv&quot;)
-testingData = read.csv(&quot;./Data/pml-testing.csv&quot;)</code></pre>
+trainingData = read.csv(&quot;./Data/pml-training.csv&quot;, na.strings = c(&quot;NA&quot;, &quot;#DIV/0!&quot;,&quot;&quot;))
+testingData = read.csv(&quot;./Data/pml-testing.csv&quot;, na.strings = c(&quot;NA&quot;, &quot;#DIV/0!&quot;,&quot;&quot;))
+dim(trainingData);dim(testingData)</code></pre>
+<pre><code>## [1] 19622   160</code></pre>
+<pre><code>## [1]  20 160</code></pre>
+<p>We can see that our datasets contain 160 variables. The next step is to clean the data and reduce the number of variables</p>
 </div>
 <div id="cleaning-the-data" class="section level2">
 <h2>Cleaning the Data</h2>
+<p>The amount of predictors was reduced by taking out columns with missing values, and near zero values:</p>
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre><code>## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>trainingData &lt;- trainingData[,(colSums(is.na(trainingData)) == 0)]
+dim(trainingData)</code></pre>
+<pre><code>## [1] 19622    60</code></pre>
+<pre class="r"><code>testingData &lt;- testingData[,(colSums(is.na(testingData)) == 0)]
+dim(testingData)</code></pre>
+<pre><code>## [1] 20 60</code></pre>
+<pre class="r"><code>numSet &lt;- which(lapply(trainingData, class) %in% &quot;numeric&quot;)
+
+ppModel &lt;-preProcess(trainingData[,numSet],method=c('knnImpute', 'center', 'scale'))
+trainingDataSet &lt;- predict(ppModel, trainingData[,numSet])
+trainingDataSet$classe &lt;- trainingData$classe
+
+testingDataSet &lt;-predict(ppModel,testingData[,numSet])
+
+nzv &lt;- nearZeroVar(trainingDataSet,saveMetrics=TRUE)
+trainingDataSet &lt;- trainingDataSet[,nzv$nzv==FALSE]
+
+nzv &lt;- nearZeroVar(testingDataSet,saveMetrics=TRUE)
+testingDataSet &lt;- testingDataSet[,nzv$nzv==FALSE]</code></pre>
+<p>The amount of variables is now 60 and all NAs and NZVs have been taken out.Next we perform crossvalidation.</p>
 </div>
 <div id="splitting-the-data" class="section level2">
 <h2>Splitting the Data</h2>
+<p>In order to perform crossvalidation we need to create a training subset and a validation subset of the data as folows:</p>
+<pre class="r"><code>set.seed(1234567890)
+valDataset&lt;- createDataPartition(trainingDataSet$classe, p=0.6, list=FALSE)
+training&lt;- trainingDataSet[valDataset, ]
+validation &lt;- trainingDataSet[-valDataset, ]</code></pre>
+<p>Next we establish a a method to be used in the model. In this case the method is random forest.</p>
 </div>
 <div id="model" class="section level2">
 <h2>Model</h2>
+<p>We load the <strong>randomForest</strong> package and fit a model:</p>
+<pre class="r"><code>library(randomForest)</code></pre>
+<pre><code>## randomForest 4.6-12</code></pre>
+<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## 
+## Attaching package: 'randomForest'</code></pre>
+<pre><code>## The following object is masked from 'package:ggplot2':
+## 
+##     margin</code></pre>
+<pre class="r"><code>fitrf &lt;- train(classe ~., method=&quot;rf&quot;, data=training, trControl=trainControl(method='cv'), number=5, allowParallel=TRUE, importance=TRUE )
+fitrf</code></pre>
+<pre><code>## Random Forest 
+## 
+## 14718 samples
+##    27 predictor
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## Summary of sample sizes: 13247, 13247, 13245, 13247, 13248, 13244, ... 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy   Kappa    
+##    2    0.9930697  0.9912334
+##   14    0.9927987  0.9908908
+##   27    0.9905562  0.9880547
+## 
+## Accuracy was used to select the optimal model using the largest value.
+## The final value used for the model was mtry = 2.</code></pre>
+<p>Now we apply the model to our training dataset:</p>
 </div>
 <div id="model-accuracy" class="section level2">
 <h2>Model Accuracy</h2>
+<pre class="r"><code>predValidRF &lt;- predict(fitrf, validation)
+cmatrix &lt;- confusionMatrix(validation$classe, predValidRF)
+cmatrix$table</code></pre>
+<pre><code>##           Reference
+## Prediction    A    B    C    D    E
+##          A 2231    0    0    0    1
+##          B    0 1517    1    0    0
+##          C    0    2 1362    4    0
+##          D    0    0    4 1281    1
+##          E    0    0    0    1 1441</code></pre>
+<p>As we can see, only a handful of observations fall outside our predictions, which indicate that our model is fairly accurate. The next step is to calculate the accuracy of the model:</p>
+<pre class="r"><code>accuracy &lt;- postResample(validation$classe, predValidRF)
+modelAccuracy &lt;- accuracy[[1]]
+modelAccuracy</code></pre>
+<pre><code>## [1] 0.9982157</code></pre>
+<p>Based on our alculations, the accuracy of the model is approximately 99.8%, so the out-of-sample error is about 0.2%. The last step is to test our model against the 20 test cases provided for the course project.</p>
 </div>
 <div id="applying-model" class="section level2">
 <h2>Applying model</h2>
-</div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<pre class="r"><code>modelPrediction &lt;- predict(fitrf, testingDataSet)
+modelPrediction</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
+<p>Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct.</p>
 </div>
 
 

@@ -13,44 +13,112 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Summary
 
+6 Participants in an experiment were asked to perform barbell lifts correctly and incorrectly while accelerometers were attached to their belt, forearm, arm, and dumbell to take measurements.The objective of the project is to predict whether they did the exercises correctly or incorrectly based on the provided data which is included in the section below.
 
 
 ## Data
 
-Below are the links through which the data was obtained. Also, the variables **trainingData** and **testingData** were created for the **pml-training.csv** and **pml-testing.csv** files, respectively. 
+Below are the links through which the data was obtained. Also, the variables **trainingData** and **testingData** were created for the **pml-training.csv** and **pml-testing.csv** files, respectively.
 
 ```{r data}
 # url1 = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
 # download.file(url1, destfile = "./Data/pml-training.csv")
 # url2 = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 # download.file(url2, destfile = "./Data/pml-testing.csv")
-trainingData = read.csv("./Data/pml-training.csv")
-testingData = read.csv("./Data/pml-testing.csv")
+trainingData = read.csv("./Data/pml-training.csv", na.strings = c("NA", "#DIV/0!",""))
+testingData = read.csv("./Data/pml-testing.csv", na.strings = c("NA", "#DIV/0!",""))
+dim(trainingData);dim(testingData)
 
 ```
 
+We can see that our datasets contain 160 variables. The next step is to clean the data and reduce the number of variables
+
 ## Cleaning the Data
 
+The amount of predictors was reduced by taking out columns with missing values, and near zero values:
+
+```{r cleaning data}
+library(caret)
+
+trainingData <- trainingData[,(colSums(is.na(trainingData)) == 0)]
+dim(trainingData)
+testingData <- testingData[,(colSums(is.na(testingData)) == 0)]
+dim(testingData)
+
+numSet <- which(lapply(trainingData, class) %in% "numeric")
+
+ppModel <-preProcess(trainingData[,numSet],method=c('knnImpute', 'center', 'scale'))
+trainingDataSet <- predict(ppModel, trainingData[,numSet])
+trainingDataSet$classe <- trainingData$classe
+
+testingDataSet <-predict(ppModel,testingData[,numSet])
+
+nzv <- nearZeroVar(trainingDataSet,saveMetrics=TRUE)
+trainingDataSet <- trainingDataSet[,nzv$nzv==FALSE]
+
+nzv <- nearZeroVar(testingDataSet,saveMetrics=TRUE)
+testingDataSet <- testingDataSet[,nzv$nzv==FALSE]
+```
+
+The amount of variables is now 60 and all NAs and NZVs have been taken out.Next we perform crossvalidation.
 
 
 ## Splitting the Data
+
+In order to perform crossvalidation we need to create a training subset and a validation subset of the data as folows:
+
+```{r data validation}
+set.seed(1234567890)
+valDataset<- createDataPartition(trainingDataSet$classe, p=0.6, list=FALSE)
+training<- trainingDataSet[valDataset, ]
+validation <- trainingDataSet[-valDataset, ]
+```
+
+Next we establish a a method to be used in the model. In this case the method is random forest.
 
 
 
 ## Model
 
+We load the **randomForest** package and fit a model:
+
+```{r model, cache=TRUE}
+library(randomForest)
+fitrf <- train(classe ~., method="rf", data=training, trControl=trainControl(method='cv'), number=5, allowParallel=TRUE, importance=TRUE )
+fitrf
+```
+
+Now we apply the model to our training dataset:
+
 
 
 ## Model Accuracy
 
+```{r confusion Matrix}
+predValidRF <- predict(fitrf, validation)
+cmatrix <- confusionMatrix(validation$classe, predValidRF)
+cmatrix$table
+```
 
+As we can see, only a handful of observations fall outside our predictions, which indicate that our model is fairly accurate. The next step is to calculate the accuracy of the model:
+
+```{r accuracy}
+accuracy <- postResample(validation$classe, predValidRF)
+modelAccuracy <- accuracy[[1]]
+modelAccuracy
+```
+
+Based on our alculations, the accuracy of the model is approximately 99.8%, so the out-of-sample error is about 0.2%. The last step is to test our model against the 20 test cases provided for the course project.
 
 
 ## Applying model
 
+```{r applied model}
+modelPrediction <- predict(fitrf, testingDataSet)
+modelPrediction
+```
+Based on the predictions given by our model, the answers were submitted on the final course quiz and obtained 20 out of 20 questions correct.
 
-
-## Conclusion
 
 
 
